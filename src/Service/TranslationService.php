@@ -92,7 +92,7 @@ class TranslationService
 
         $cjkTotal = $chineseCount + $japaneseCount + $koreanCount;
         if ($cjkTotal === 0) {
-            return 'en';
+            return $this->detectHuEn($clean);
         }
 
         if ($chineseCount >= $japaneseCount && $chineseCount >= $koreanCount) {
@@ -105,6 +105,31 @@ class TranslationService
 
         return 'ko';
     }
+
+    protected function detectHuEn(string $clean): string
+    {
+        $clean = mb_strtolower($clean);
+        $score = 0;
+
+        // Letters that are strongly Hungarian
+        $score += 3 * preg_match_all('/[őű]/u', $clean);
+        $score += preg_match_all('/[áéíóöúü]/u', $clean);
+
+        $huWords = ['az','és','hogy','nem','egy','van','meg','már','ez','ha','mint','volt','csak','még','vagy','lehet','nagyon','szia','köszönöm','igen','nincs','vagyok','minden','után','előtt','mert','akkor','ami','amit','ezt','azt','pedig','között','hogyan','mikor','kérem'];
+        $enWords = ['the','and','is','are','of','to','in','that','it','for','with','you','this','was','not','have','on','as','at','by','from','or','an','can','will','how','what','my','your','feel','free'];
+
+        foreach (preg_split('/[^\p{L}]+/u', $clean, -1, PREG_SPLIT_NO_EMPTY) as $w) {
+            if (in_array($w, $huWords, true)) {
+                $score += 2;
+            }
+            if (in_array($w, $enWords, true)) {
+                $score -= 2;
+            }
+        }
+
+        return $score > 0 ? 'hu' : 'en';
+    }
+
 
     protected function stripSystemTags(string $text): string
     {

@@ -19,7 +19,7 @@ class OpenAI implements EngineInterface
         $this->baseUrl = rtrim($this->settings->get('ani-nya-i18n.openai_base_url') ?: 'https://api.openai.com/v1', '/');
 
         $this->client = new Client([
-            'base_uri' => $this->baseUrl,
+            'base_uri' => $this->baseUrl.'/',
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
@@ -35,10 +35,16 @@ class OpenAI implements EngineInterface
             return null;
         }
 
-        $prompt = "Translate the following text to {$targetLang}.\n\nRules:\n1. Preserve all formatting (markdown, links, code blocks, line breaks)\n2. Keep URLs, code, and technical identifiers unchanged\n3. Output ONLY the translation, no explanations\n4. If already in target language, return unchanged\n\nText:\n{$text}";
+        $names = ['hu' => 'Hungarian', 'en' => 'English', 'zh-Hans' => 'Simplified Chinese'];
+        $langName = $names[$targetLang] ?? $targetLang;
+        $template = $this->settings->get('ani-nya-i18n.openai_prompt');
+        $prompt = $template
+            ? strtr($template, ['{target_lang}' => $langName, '{text}' => $text])
+            : "Translate the following text to {$langName}.\n\nRules:\n1. Preserve all formatting (markdown, links, code blocks, line breaks)\n2. Keep URLs, code, and technical identifiers unchanged\n3. Output ONLY the translation, no explanations\n4. If already in target language, return unchanged\n\nText:\n{$text}";
+
 
         try {
-            $response = $this->client->post('/chat/completions', [
+            $response = $this->client->post('chat/completions', [
                 'json' => [
                     'model' => $this->model,
                     'messages' => [

@@ -41,9 +41,7 @@ class TranslateDiscussion
                 );
             }
         } catch (\Throwable $e) {
-                'discussion_id' => $discussion->id,
-                'error' => $e->getMessage(),
-            ]);
+            // ignored
         }
-    }
+	}
 }
